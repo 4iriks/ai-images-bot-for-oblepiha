@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import settings
+from db.models import MODELS
 
 
 def subscription_kb() -> InlineKeyboardMarkup:
@@ -24,12 +25,32 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     ])
 
 
-def settings_kb(clarification_enabled: bool) -> InlineKeyboardMarkup:
+def settings_kb(clarification_enabled: bool, current_model: str) -> InlineKeyboardMarkup:
     status = "ВКЛ ✅" if clarification_enabled else "ВЫКЛ ❌"
+    model_info = MODELS.get(current_model, {"name": current_model, "emoji": "🎨"})
+    model_label = f"{model_info['emoji']} {model_info['name']}"
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"Уточнение промта: {status}", callback_data="toggle_clarification")],
+        [InlineKeyboardButton(text=f"Модель: {model_label}", callback_data="choose_model")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu")],
     ])
+
+
+def models_kb(current_model: str, usage_map: dict[str, int]) -> InlineKeyboardMarkup:
+    buttons = []
+    for model_id, info in MODELS.items():
+        selected = " ✓" if model_id == current_model else ""
+        limit = info["limit"]
+        used = usage_map.get(model_id, 0)
+        if limit == 0:
+            badge = "∞"
+        else:
+            remaining = max(0, limit - used)
+            badge = f"{remaining}/{limit}"
+        label = f"{info['emoji']} {info['name']} [{badge}]{selected}"
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"set_model:{model_id}")])
+    buttons.append([InlineKeyboardButton(text="◀️ Назад", callback_data="settings")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def cancel_kb() -> InlineKeyboardMarkup:

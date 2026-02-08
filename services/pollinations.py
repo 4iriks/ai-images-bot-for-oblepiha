@@ -13,7 +13,9 @@ class PollinationsService:
     def __init__(self, session: aiohttp.ClientSession):
         self._session = session
 
-    async def generate_image(self, prompt: str, width: int = 1024, height: int = 1024) -> bytes | None:
+    async def generate_image(
+        self, prompt: str, model: str = "flux", width: int = 1024, height: int = 1024,
+    ) -> bytes | None:
         for _ in range(10):  # max retries across keys
             key_row = await get_active_key()
             if key_row is None:
@@ -24,6 +26,7 @@ class PollinationsService:
                 "prompt": prompt,
                 "key_index": key_row["key_index"],
                 "pollinations_key": key_row["key"],
+                "model": model,
                 "width": width,
                 "height": height,
             }
@@ -47,7 +50,7 @@ class PollinationsService:
                         await deactivate_key(key_row["id"])
                         continue
                     else:
-                        logger.error("Proxy returned %d", resp.status)
+                        logger.error("Proxy returned %d for model %s", resp.status, model)
                         return None
             except asyncio.TimeoutError:
                 logger.error("Proxy request timed out")

@@ -24,6 +24,7 @@ async def init_db():
             username TEXT,
             full_name TEXT,
             clarification_enabled INTEGER DEFAULT 1,
+            selected_model TEXT DEFAULT 'flux',
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
@@ -48,6 +49,20 @@ async def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS model_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            model TEXT NOT NULL,
+            used_date TEXT NOT NULL DEFAULT (date('now')),
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        )
+    """)
+    # Migrations for existing tables
+    try:
+        await db.execute("ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'flux'")
+    except Exception:
+        pass
     await db.commit()
 
 

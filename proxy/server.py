@@ -19,13 +19,14 @@ async def generate(request: web.Request) -> web.Response:
     prompt = data.get("prompt", "")
     key_index = data.get("key_index", 0)
     pollinations_key = data.get("pollinations_key", "")
+    model = data.get("model", "flux")
     width = data.get("width", 1024)
     height = data.get("height", 1024)
 
     encoded_prompt = quote(prompt, safe="")
     url = BASE_URL.format(prompt=encoded_prompt)
     params = {
-        "model": "klein-large",
+        "model": model,
         "width": str(width),
         "height": str(height),
     }

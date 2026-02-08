@@ -1,5 +1,16 @@
 from db.database import get_db
 
+# Model config: display_name, emoji, daily_limit (0 = unlimited)
+MODELS = {
+    "flux": {"name": "FLUX", "emoji": "⚡", "limit": 0},
+    "zimage": {"name": "ZImage", "emoji": "🖼", "limit": 0},
+    "flux-2-dev": {"name": "FLUX 2 Dev", "emoji": "🔬", "limit": 10},
+    "imagen-4": {"name": "Imagen 4", "emoji": "🌟", "limit": 10},
+    "klein": {"name": "Klein", "emoji": "💎", "limit": 7},
+    "klein-large": {"name": "Klein Large", "emoji": "👑", "limit": 3},
+    "gptimage": {"name": "GPT Image", "emoji": "🤖", "limit": 3},
+}
+
 
 # --- Users ---
 
@@ -30,11 +41,48 @@ async def set_clarification(user_id: int, enabled: bool):
     await db.commit()
 
 
+async def set_user_model(user_id: int, model: str):
+    db = await get_db()
+    await db.execute(
+        "UPDATE users SET selected_model = ? WHERE user_id = ?",
+        (model, user_id),
+    )
+    await db.commit()
+
+
+async def get_user_model(user_id: int) -> str:
+    user = await get_user(user_id)
+    if user and user.get("selected_model"):
+        return user["selected_model"]
+    return "flux"
+
+
 async def get_total_users() -> int:
     db = await get_db()
     cursor = await db.execute("SELECT COUNT(*) FROM users")
     row = await cursor.fetchone()
     return row[0]
+
+
+# --- Model Usage ---
+
+async def get_model_usage_today(user_id: int, model: str) -> int:
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT COUNT(*) FROM model_usage WHERE user_id = ? AND model = ? AND used_date = date('now')",
+        (user_id, model),
+    )
+    row = await cursor.fetchone()
+    return row[0]
+
+
+async def add_model_usage(user_id: int, model: str):
+    db = await get_db()
+    await db.execute(
+        "INSERT INTO model_usage (user_id, model) VALUES (?, ?)",
+        (user_id, model),
+    )
+    await db.commit()
 
 
 # --- Generations ---

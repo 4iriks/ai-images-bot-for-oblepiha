@@ -4,7 +4,10 @@ from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, BufferedInputFile
 
-from db.models import get_user, add_generation
+from db.models import (
+    get_user, add_generation, get_user_model,
+    get_model_usage_today, add_model_usage, MODELS,
+)
 from keyboards.inline import cancel_kb, clarification_kb, main_menu_kb
 from services.gemini import GeminiService
 from services.logger import log_generation
@@ -69,7 +72,7 @@ async def skip_clarification(
     except Exception:
         final_prompt = prompt
 
-    await _do_generation(callback.message, state, pollinations_service, prompt, final_prompt, wait_msg, source_chat=callback.message)
+    await _do_generation(callback.message, state, pollinations_service, prompt, final_prompt, wait_msg, source_chat=callback.message, user_id=callback.from_user.id)
 
 
 @router.message(GenerationStates.waiting_for_prompt, F.photo)
@@ -202,14 +205,46 @@ async def _do_generation(
     final_prompt: str,
     status_msg: Message | None = None,
     source_chat: Message | None = None,
+    user_id: int | None = None,
 ):
     bot: Bot = message.bot  # type: ignore[assignment]
     target = source_chat or message
+    if user_id is None:
+        user_id = message.from_user.id
+
+    # Get user's selected model
+    model = await get_user_model(user_id)
+    model_info = MODELS.get(model, MODELS["flux"])
+
+    # Check daily limit
+    if model_info["limit"] > 0:
+        used = await get_model_usage_today(user_id, model)
+        if used >= model_info["limit"]:
+            await state.clear()
+            text = (
+                f"⚠️ Лимит модели <b>{model_info['emoji']} {model_info['name']}</b> "
+                f"исчерпан на сегодня ({model_info['limit']}/{model_info['limit']}).\n\n"
+                "Смените модель в настройках или попробуйте завтра."
+            )
+            if status_msg:
+                await status_msg.edit_text(text, reply_markup=main_menu_kb())
+            else:
+                await target.answer(text, reply_markup=main_menu_kb())
+            return
 
     if status_msg is None:
-        status_msg = await target.answer("🎨 Генерирую изображение...")
+        status_msg = await target.answer(
+            f"🎨 Генерирую ({model_info['emoji']} {model_info['name']})..."
+        )
+    else:
+        try:
+            await status_msg.edit_text(
+                f"🎨 Генерирую ({model_info['emoji']} {model_info['name']})..."
+            )
+        except Exception:
+            pass
 
-    image_data = await pollinations.generate_image(final_prompt)
+    image_data = await pollinations.generate_image(final_prompt, model=model)
     await state.clear()
 
     if image_data is None:
@@ -219,7 +254,16 @@ async def _do_generation(
         )
         return
 
-    await add_generation(message.from_user.id, original_prompt, final_prompt)
+    # Track usage
+    await add_model_usage(user_id, model)
+    await add_generation(user_id, original_prompt, final_prompt)
+
+    # Show remaining
+    remaining_text = ""
+    if model_info["limit"] > 0:
+        used = await get_model_usage_today(user_id, model)
+        remaining = model_info["limit"] - used
+        remaining_text = f"\n{model_info['emoji']} {model_info['name']} — осталось {remaining}/{model_info['limit']}"
 
     photo = BufferedInputFile(image_data, filename="generation.png")
     caption = f"🎨 {original_prompt[:900]}"
@@ -231,15 +275,16 @@ async def _do_generation(
         pass
 
     await target.answer(
-        "Напишите новый запрос или выберите действие:",
+        f"Напишите новый запрос или выберите действие:{remaining_text}",
         reply_markup=main_menu_kb(),
     )
 
     # Log in background to not delay response
+    username = message.from_user.username if message.from_user else None
     asyncio.create_task(log_generation(
         bot,
-        message.from_user.id,
-        message.from_user.username,
+        user_id,
+        username,
         original_prompt,
         final_prompt,
         image_data,
