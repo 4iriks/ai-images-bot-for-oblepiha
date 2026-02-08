@@ -15,16 +15,17 @@ async def log_generation(
     original_prompt: str,
     final_prompt: str | None,
     image_data: bytes,
+    model: str = "flux",
 ):
     if not settings.log_chat_id:
         return
 
+    user_line = f"👤 @{username} (ID: <code>{user_id}</code>)" if username else f"👤 ID: <code>{user_id}</code>"
     caption = (
-        f"👤 {username or 'N/A'} (ID: {user_id})\n"
-        f"💬 {original_prompt[:200]}\n"
+        f"🎨 Модель: <b>{model}</b>\n"
+        f"{user_line}\n"
+        f"💬 {original_prompt[:300]}"
     )
-    if final_prompt and final_prompt != original_prompt:
-        caption += f"🎯 {final_prompt[:200]}"
 
     try:
         photo = BufferedInputFile(image_data, filename="generation.png")

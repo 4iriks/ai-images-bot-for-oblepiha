@@ -3,6 +3,7 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware, Bot
 from aiogram.types import TelegramObject, Message, CallbackQuery
 
+from config import settings
 from keyboards.inline import subscription_kb
 from utils.subscription import check_subscription
 
@@ -14,6 +15,15 @@ class SubscriptionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
+        # Ignore messages from log chat — bot only sends there
+        chat = None
+        if isinstance(event, Message):
+            chat = event.chat
+        elif isinstance(event, CallbackQuery) and event.message:
+            chat = event.message.chat
+        if chat and settings.log_chat_id and chat.id == settings.log_chat_id:
+            return
+
         user = data.get("event_from_user")
         if user is None:
             return await handler(event, data)

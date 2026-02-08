@@ -72,7 +72,7 @@ async def skip_clarification(
     except Exception:
         final_prompt = prompt
 
-    await _do_generation(callback.message, state, pollinations_service, prompt, final_prompt, wait_msg, source_chat=callback.message, user_id=callback.from_user.id)
+    await _do_generation(callback.message, state, pollinations_service, prompt, final_prompt, wait_msg, source_chat=callback.message, user_id=callback.from_user.id, username=callback.from_user.username)
 
 
 @router.message(GenerationStates.waiting_for_prompt, F.photo)
@@ -206,11 +206,14 @@ async def _do_generation(
     status_msg: Message | None = None,
     source_chat: Message | None = None,
     user_id: int | None = None,
+    username: str | None = None,
 ):
     bot: Bot = message.bot  # type: ignore[assignment]
     target = source_chat or message
     if user_id is None:
         user_id = message.from_user.id
+    if username is None and message.from_user:
+        username = message.from_user.username
 
     # Get user's selected model
     model = await get_user_model(user_id)
@@ -280,7 +283,6 @@ async def _do_generation(
     )
 
     # Log in background to not delay response
-    username = message.from_user.username if message.from_user else None
     asyncio.create_task(log_generation(
         bot,
         user_id,
@@ -288,4 +290,5 @@ async def _do_generation(
         original_prompt,
         final_prompt,
         image_data,
+        model=model,
     ))
