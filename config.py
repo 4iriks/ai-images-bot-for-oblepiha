@@ -15,8 +15,13 @@ class Settings:
     ])
     required_channel: str = field(default_factory=lambda: getenv("REQUIRED_CHANNEL", ""))
     required_bot: str = field(default_factory=lambda: getenv("REQUIRED_BOT", ""))
-    log_chat_id: int = field(default_factory=lambda: int(getenv("LOG_CHAT_ID", "0")))
-    admin_id: int = field(default_factory=lambda: int(getenv("ADMIN_ID", "0")))
+    log_chat_id: int = field(default_factory=lambda: int(getenv("LOG_CHAT_ID") or "0"))
+    admin_id: int = field(default_factory=lambda: int(getenv("ADMIN_ID") or "0"))
+    proxy_url: str = field(default_factory=lambda: getenv("PROXY_URL", "http://proxy:8080"))
+    vless_configs: list[str] = field(default_factory=lambda: [
+        c.strip() for c in getenv("VLESS_CONFIGS", "").split(",") if c.strip()
+    ])
+    db_path: str = field(default_factory=lambda: getenv("DB_PATH", "bot.db"))
 
     def __post_init__(self):
         if not self.bot_token:

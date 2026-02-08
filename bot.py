@@ -54,8 +54,8 @@ async def main():
         start.router,
         menu.router,
         settings_handler.router,
-        generation.router,
         admin.router,
+        generation.router,  # last — has catch-all F.text handler
     )
 
     logger.info("Bot starting...")

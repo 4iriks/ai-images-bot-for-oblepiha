@@ -91,9 +91,12 @@ async def deactivate_key(key_id: int):
 
 async def add_api_key(key: str, usage_limit: int = 1000):
     db = await get_db()
+    cursor = await db.execute("SELECT COALESCE(MAX(key_index), -1) + 1 FROM api_keys")
+    row = await cursor.fetchone()
+    next_index = row[0]
     await db.execute(
-        "INSERT OR IGNORE INTO api_keys (key, usage_limit) VALUES (?, ?)",
-        (key, usage_limit),
+        "INSERT OR IGNORE INTO api_keys (key, key_index, usage_limit) VALUES (?, ?, ?)",
+        (key, next_index, usage_limit),
     )
     await db.commit()
 

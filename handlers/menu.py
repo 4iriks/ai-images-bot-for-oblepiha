@@ -10,7 +10,13 @@ router = Router()
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text(
-        "Выберите действие:",
-        reply_markup=main_menu_kb(),
-    )
+    try:
+        await callback.message.edit_text(
+            "Выберите действие:",
+            reply_markup=main_menu_kb(),
+        )
+    except Exception:
+        await callback.message.answer(
+            "Выберите действие:",
+            reply_markup=main_menu_kb(),
+        )

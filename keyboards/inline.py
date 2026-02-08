@@ -38,6 +38,13 @@ def cancel_kb() -> InlineKeyboardMarkup:
     ])
 
 
+def clarification_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⏩ Пропустить", callback_data="skip_clarification")],
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_generation")],
+    ])
+
+
 def back_to_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="◀️ В меню", callback_data="back_to_menu")],

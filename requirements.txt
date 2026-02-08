@@ -1,5 +1,4 @@
 aiogram>=3.20
 aiosqlite
 aiohttp
-google-genai
 python-dotenv

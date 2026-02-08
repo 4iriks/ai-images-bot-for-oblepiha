@@ -1,14 +1,18 @@
-import asyncio
+import base64
+import logging
 
-from google import genai
+import aiohttp
 
 from config import settings
+
+logger = logging.getLogger(__name__)
+
+TEXT_API_URL = "https://gen.pollinations.ai/v1/chat/completions"
 
 
 class GeminiService:
     def __init__(self):
-        self._client = genai.Client(api_key=settings.gemini_api_key)
-        self._model = "gemini-2.5-flash-lite-preview-06-17"
+        self._model = "gemini-2.5-flash-lite"
 
     async def generate_clarifying_questions(self, prompt: str) -> str:
         system = (
@@ -16,6 +20,36 @@ class GeminiService:
             "The user gave you their idea. Ask 3-5 short clarifying questions to better understand "
             "what they want. Write the questions in the SAME language as the user's prompt. "
             "Number the questions. Do not add any other text."
+        )
+        return await self._generate(system, prompt)
+
+    async def enhance_prompt_with_image(self, image_data: bytes, prompt: str = "") -> str:
+        system = (
+            "You are an assistant that creates detailed image generation prompts. "
+            "The user sent you a reference image and optionally a text description. "
+            "Analyze the image and the text (if provided) and create a single detailed prompt "
+            "in ENGLISH for an image generation model. "
+            "The prompt should be vivid, specific, and describe the scene, style, lighting, "
+            "colors, and composition. Output ONLY the prompt text, nothing else."
+        )
+        b64 = base64.b64encode(image_data).decode()
+        user_content = [
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+            },
+        ]
+        if prompt:
+            user_content.insert(0, {"type": "text", "text": prompt})
+        return await self._generate_multimodal(system, user_content)
+
+    async def enhance_prompt(self, prompt: str) -> str:
+        system = (
+            "You are an assistant that creates detailed image generation prompts. "
+            "The user gave you their idea. "
+            "Create a single detailed prompt in ENGLISH for an image generation model. "
+            "The prompt should be vivid, specific, and describe the scene, style, lighting, "
+            "colors, and composition. Output ONLY the prompt text, nothing else."
         )
         return await self._generate(system, prompt)
 
@@ -30,16 +64,58 @@ class GeminiService:
         user_text = f"Original idea: {original_prompt}\n\nAnswers to questions:\n{answers}"
         return await self._generate(system, user_text)
 
-    async def _generate(self, system: str, user_text: str) -> str:
-        def _sync():
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=user_text,
-                config=genai.types.GenerateContentConfig(
-                    system_instruction=system,
-                    temperature=0.7,
-                ),
-            )
-            return response.text
+    async def _generate_multimodal(self, system: str, user_content: list) -> str:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {settings.gemini_api_key}",
+        }
+        payload = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_content},
+            ],
+            "temperature": 0.7,
+        }
 
-        return await asyncio.to_thread(_sync)
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                TEXT_API_URL,
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error("Pollinations text API error %d: %s", resp.status, text)
+                    raise RuntimeError(f"Text API returned {resp.status}")
+                data = await resp.json()
+                return data["choices"][0]["message"]["content"]
+
+    async def _generate(self, system: str, user_text: str) -> str:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {settings.gemini_api_key}",
+        }
+        payload = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_text},
+            ],
+            "temperature": 0.7,
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                TEXT_API_URL,
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error("Pollinations text API error %d: %s", resp.status, text)
+                    raise RuntimeError(f"Text API returned {resp.status}")
+                data = await resp.json()
+                return data["choices"][0]["message"]["content"]

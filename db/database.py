@@ -1,6 +1,8 @@
+import os
+
 import aiosqlite
 
-DB_PATH = "bot.db"
+DB_PATH = os.getenv("DB_PATH", "bot.db")
 
 _connection: aiosqlite.Connection | None = None
 
@@ -39,6 +41,7 @@ async def init_db():
         CREATE TABLE IF NOT EXISTS api_keys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             key TEXT NOT NULL UNIQUE,
+            key_index INTEGER NOT NULL DEFAULT 0,
             usage_count INTEGER DEFAULT 0,
             usage_limit INTEGER DEFAULT 1000,
             is_active INTEGER DEFAULT 1,
