@@ -125,3 +125,54 @@ async def get_top_prompters(limit: int = 10) -> list[dict]:
     )
     rows = await cursor.fetchall()
     return [dict(r) for r in rows]
+
+
+async def get_top_prompters_today(limit: int = 7) -> list[dict]:
+    db = await get_db()
+    cursor = await db.execute(
+        """SELECT u.user_id, u.username, u.full_name, COUNT(g.id) as gen_count
+           FROM users u
+           LEFT JOIN generations g ON u.user_id = g.user_id
+           WHERE date(g.created_at) = date('now')
+           GROUP BY u.user_id
+           HAVING gen_count > 0
+           ORDER BY gen_count DESC
+           LIMIT ?""",
+        (limit,),
+    )
+    rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_new_users_today() -> int:
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT COUNT(*) FROM users WHERE date(created_at) = date('now')"
+    )
+    row = await cursor.fetchone()
+    return row[0]
+
+
+async def get_most_popular_model() -> tuple[str, int] | None:
+    db = await get_db()
+    cursor = await db.execute(
+        """SELECT model, COUNT(*) as usage_count
+           FROM model_usage
+           GROUP BY model
+           ORDER BY usage_count DESC
+           LIMIT 1"""
+    )
+    row = await cursor.fetchone()
+    return (row[0], row[1]) if row else None
+
+
+async def get_avg_prompts_per_user() -> float:
+    db = await get_db()
+    cursor = await db.execute(
+        """SELECT
+           CAST(COUNT(g.id) AS FLOAT) / NULLIF(COUNT(DISTINCT u.user_id), 0) as avg_prompts
+           FROM users u
+           LEFT JOIN generations g ON u.user_id = g.user_id"""
+    )
+    row = await cursor.fetchone()
+    return row[0] if row and row[0] else 0.0

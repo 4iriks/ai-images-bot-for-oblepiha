@@ -222,6 +222,7 @@ async def _do_generation(
     # Get user's selected model
     model = await get_user_model(user_id)
     model_info = MODELS.get(model, MODELS["flux"])
+    logger.info(f"User {user_id} generating with model: {model}")
 
     # Check daily limit
     if model_info["limit"] > 0:

@@ -22,6 +22,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎨 Генерация", callback_data="generate")],
         [InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")],
+        [InlineKeyboardButton(text="📱 Наши проекты", callback_data="our_projects")],
     ])
 
 
@@ -69,6 +70,14 @@ def clarification_kb() -> InlineKeyboardMarkup:
 def back_to_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="◀️ В меню", callback_data="back_to_menu")],
+    ])
+
+
+def our_projects_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔐 Облепиха VPN", url="https://t.me/oblepiha_vpn_bot")],
+        [InlineKeyboardButton(text="📢 Облепиха | новости", url="https://t.me/Oblepiha_Channel")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu")],
     ])
 
 
