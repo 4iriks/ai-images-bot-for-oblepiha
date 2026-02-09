@@ -9,7 +9,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import settings
 from db.database import init_db, close_db
-from db.models import add_api_key
 from handlers import start, menu, settings as settings_handler, generation, admin
 from middlewares.subscription import SubscriptionMiddleware
 from services.gemini import GeminiService
@@ -29,19 +28,14 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Init DB
+    # Инит БД
     await init_db()
 
-    # Seed API keys from env if DB is empty
-    for key in settings.pollinations_api_keys:
-        await add_api_key(key)
-
-    # Services
+    # Сервисы
     session = aiohttp.ClientSession()
     gemini_service = GeminiService()
     pollinations_service = PollinationsService(session)
 
-    # Inject services via dp for aiogram 3.x kwargs injection
     dp["gemini_service"] = gemini_service
     dp["pollinations_service"] = pollinations_service
 
@@ -49,16 +43,16 @@ async def main():
     dp.message.outer_middleware(SubscriptionMiddleware())
     dp.callback_query.outer_middleware(SubscriptionMiddleware())
 
-    # Routers
+    # Роутеры
     dp.include_routers(
         start.router,
         menu.router,
         settings_handler.router,
         admin.router,
-        generation.router,  # last — has catch-all F.text handler
+        generation.router,
     )
 
-    logger.info("Bot starting...")
+    logger.info("Бот запускается...")
     try:
         await dp.start_polling(bot)
     finally:

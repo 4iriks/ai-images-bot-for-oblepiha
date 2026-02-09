@@ -1,6 +1,6 @@
 from db.database import get_db
 
-# Model config: display_name, emoji, daily_limit (0 = unlimited)
+# Конфиг моделей: display_name, emoji, daily_limit (0 = безлимитно)
 MODELS = {
     "flux": {"name": "FLUX", "emoji": "⚡", "limit": 0},
     "zimage": {"name": "ZImage", "emoji": "🖼", "limit": 0},
@@ -12,7 +12,7 @@ MODELS = {
 }
 
 
-# --- Users ---
+# --- Пользователи ---
 
 async def ensure_user(user_id: int, username: str | None, full_name: str):
     db = await get_db()
@@ -64,7 +64,7 @@ async def get_total_users() -> int:
     return row[0]
 
 
-# --- Model Usage ---
+# --- Использование моделей ---
 
 async def get_model_usage_today(user_id: int, model: str) -> int:
     db = await get_db()
@@ -85,7 +85,7 @@ async def add_model_usage(user_id: int, model: str):
     await db.commit()
 
 
-# --- Generations ---
+# --- Генерации ---
 
 async def add_generation(user_id: int, original_prompt: str, final_prompt: str | None):
     db = await get_db()
@@ -112,58 +112,16 @@ async def get_today_generations() -> int:
     return row[0]
 
 
-# --- API Keys ---
-
-async def get_active_key() -> dict | None:
+async def get_top_prompters(limit: int = 10) -> list[dict]:
     db = await get_db()
     cursor = await db.execute(
-        "SELECT * FROM api_keys WHERE is_active = 1 AND usage_count < usage_limit ORDER BY usage_count ASC LIMIT 1"
+        """SELECT u.user_id, u.username, u.full_name, COUNT(g.id) as gen_count
+           FROM users u
+           LEFT JOIN generations g ON u.user_id = g.user_id
+           GROUP BY u.user_id
+           ORDER BY gen_count DESC
+           LIMIT ?""",
+        (limit,),
     )
-    row = await cursor.fetchone()
-    return dict(row) if row else None
-
-
-async def increment_key_usage(key_id: int):
-    db = await get_db()
-    await db.execute(
-        "UPDATE api_keys SET usage_count = usage_count + 1 WHERE id = ?", (key_id,)
-    )
-    await db.commit()
-
-
-async def deactivate_key(key_id: int):
-    db = await get_db()
-    await db.execute("UPDATE api_keys SET is_active = 0 WHERE id = ?", (key_id,))
-    await db.commit()
-
-
-async def add_api_key(key: str, usage_limit: int = 1000):
-    db = await get_db()
-    cursor = await db.execute("SELECT COALESCE(MAX(key_index), -1) + 1 FROM api_keys")
-    row = await cursor.fetchone()
-    next_index = row[0]
-    await db.execute(
-        "INSERT OR IGNORE INTO api_keys (key, key_index, usage_limit) VALUES (?, ?, ?)",
-        (key, next_index, usage_limit),
-    )
-    await db.commit()
-
-
-async def get_all_keys() -> list[dict]:
-    db = await get_db()
-    cursor = await db.execute("SELECT * FROM api_keys ORDER BY id")
     rows = await cursor.fetchall()
     return [dict(r) for r in rows]
-
-
-async def get_keys_usage_percent() -> float:
-    """Returns average usage percentage across all active keys."""
-    db = await get_db()
-    cursor = await db.execute(
-        "SELECT usage_count, usage_limit FROM api_keys WHERE is_active = 1"
-    )
-    rows = await cursor.fetchall()
-    if not rows:
-        return 100.0
-    total_pct = sum(r[0] / r[1] * 100 for r in rows if r[1] > 0)
-    return total_pct / len(rows)

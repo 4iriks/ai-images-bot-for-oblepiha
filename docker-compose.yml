@@ -4,19 +4,6 @@ services:
     env_file: .env
     volumes:
       - bot-data:/app/data
-    depends_on:
-      proxy:
-        condition: service_healthy
-    restart: unless-stopped
-
-  proxy:
-    build: ./proxy
-    env_file: .env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     restart: unless-stopped
 
 volumes:

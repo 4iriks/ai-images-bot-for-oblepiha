@@ -75,7 +75,5 @@ def back_to_menu_kb() -> InlineKeyboardMarkup:
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Аналитика", callback_data="admin_analytics")],
-        [InlineKeyboardButton(text="🔑 API ключи", callback_data="admin_keys")],
-        [InlineKeyboardButton(text="➕ Добавить ключ", callback_data="admin_add_key")],
         [InlineKeyboardButton(text="◀️ В меню", callback_data="back_to_menu")],
     ])

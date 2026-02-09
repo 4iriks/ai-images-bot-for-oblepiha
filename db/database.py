@@ -39,17 +39,6 @@ async def init_db():
         )
     """)
     await db.execute("""
-        CREATE TABLE IF NOT EXISTS api_keys (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            key TEXT NOT NULL UNIQUE,
-            key_index INTEGER NOT NULL DEFAULT 0,
-            usage_count INTEGER DEFAULT 0,
-            usage_limit INTEGER DEFAULT 1000,
-            is_active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
-        )
-    """)
-    await db.execute("""
         CREATE TABLE IF NOT EXISTS model_usage (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -58,11 +47,15 @@ async def init_db():
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         )
     """)
-    # Migrations for existing tables
-    try:
-        await db.execute("ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'flux'")
-    except Exception:
-        pass
+    # Миграции для существующих таблиц
+    migrations = [
+        "ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'flux'",
+    ]
+    for migration in migrations:
+        try:
+            await db.execute(migration)
+        except Exception:
+            pass
     await db.commit()
 
 
