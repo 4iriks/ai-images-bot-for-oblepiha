@@ -24,7 +24,7 @@ async def init_db():
             username TEXT,
             full_name TEXT,
             clarification_enabled INTEGER DEFAULT 1,
-            selected_model TEXT DEFAULT 'flux',
+            selected_model TEXT DEFAULT 'imagen-4',
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)

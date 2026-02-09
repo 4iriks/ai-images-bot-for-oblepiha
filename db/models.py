@@ -5,7 +5,7 @@ MODELS = {
     "flux": {"name": "FLUX", "emoji": "⚡", "limit": 0},
     "zimage": {"name": "ZImage", "emoji": "🖼", "limit": 0},
     "flux-2-dev": {"name": "FLUX 2 Dev", "emoji": "🔬", "limit": 10},
-    "imagen-4": {"name": "Imagen 4", "emoji": "🌟", "limit": 10},
+    "imagen-4": {"name": "Imagen 4", "emoji": "🌟", "limit": 15},
     "klein": {"name": "Klein", "emoji": "💎", "limit": 7},
     "klein-large": {"name": "Klein Large", "emoji": "👑", "limit": 3},
     "gptimage": {"name": "GPT Image", "emoji": "🤖", "limit": 3},
@@ -54,7 +54,7 @@ async def get_user_model(user_id: int) -> str:
     user = await get_user(user_id)
     if user and user.get("selected_model"):
         return user["selected_model"]
-    return "flux"
+    return "imagen-4"
 
 
 async def get_total_users() -> int:
