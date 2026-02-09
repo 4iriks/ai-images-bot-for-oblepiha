@@ -77,6 +77,7 @@ def our_projects_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔐 Облепиха VPN", url="https://t.me/oblepiha_vpn_bot")],
         [InlineKeyboardButton(text="📢 Облепиха | новости", url="https://t.me/Oblepiha_Channel")],
+        [InlineKeyboardButton(text="💬 Поддержка", url="https://t.me/oblepiha_helper")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu")],
     ])
 

@@ -12,6 +12,7 @@ router = Router()
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     user = message.from_user
+    existing_user = await get_user(user.id)
     await ensure_user(user.id, user.username, user.full_name)
 
     if not await check_subscription(message.bot, user.id):
@@ -26,11 +27,19 @@ async def cmd_start(message: Message):
         )
         return
 
-    await message.answer(
-        "🎉 <b>Спасибо за поддержку, приятного пользования!</b> 🧡\n\n"
-        "Выберите действие:",
-        reply_markup=main_menu_kb(),
-    )
+    # Если пользователь уже существовал и подписан - приветствие
+    if existing_user:
+        await message.answer(
+            "Приятного пользования сервисом Облепиха images AI 🧡",
+            reply_markup=main_menu_kb(),
+        )
+    else:
+        # Новый пользователь, только что подписался
+        await message.answer(
+            "🎉 <b>Спасибо за поддержку, приятного пользования!</b> 🧡\n\n"
+            "Выберите действие:",
+            reply_markup=main_menu_kb(),
+        )
 
 
 @router.callback_query(F.data == "check_subscription")
