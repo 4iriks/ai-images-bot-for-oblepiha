@@ -28,11 +28,9 @@ def main_menu_kb() -> InlineKeyboardMarkup:
 
 def settings_kb(clarification_enabled: bool, current_model: str) -> InlineKeyboardMarkup:
     status = "ВКЛ ✅" if clarification_enabled else "ВЫКЛ ❌"
-    model_info = MODELS.get(current_model, {"name": current_model, "emoji": "🎨"})
-    model_label = f"{model_info['emoji']} {model_info['name']}"
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"Уточнение промта: {status}", callback_data="toggle_clarification")],
-        [InlineKeyboardButton(text=f"Модель: {model_label}", callback_data="choose_model")],
+        [InlineKeyboardButton(text="🎨 Сменить AI модель", callback_data="choose_model")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu")],
     ])
 
