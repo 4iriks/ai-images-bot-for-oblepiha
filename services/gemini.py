@@ -7,11 +7,10 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-TEXT_API_URL = "https://gen.pollinations.ai/v1/chat/completions"
-
 
 class GeminiService:
-    def __init__(self):
+    def __init__(self, session: aiohttp.ClientSession):
+        self._session = session
         self._model = "gemini-2.5-flash-lite"
 
     async def generate_clarifying_questions(self, prompt: str) -> str:
@@ -65,9 +64,10 @@ class GeminiService:
         return await self._generate(system, user_text)
 
     async def _generate_multimodal(self, system: str, user_content: list) -> str:
+        url = f"{settings.api_url}/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {settings.gemini_api_key}",
+            "Authorization": f"Bearer {settings.api_token}",
         }
         payload = {
             "model": self._model,
@@ -78,24 +78,24 @@ class GeminiService:
             "temperature": 0.7,
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                TEXT_API_URL,
-                json=payload,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    logger.error("Pollinations text API error %d: %s", resp.status, text)
-                    raise RuntimeError(f"Text API returned {resp.status}")
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
+        async with self._session.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=30),
+        ) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                logger.error("Text API error %d: %s", resp.status, text)
+                raise RuntimeError(f"Text API returned {resp.status}")
+            data = await resp.json()
+            return data["choices"][0]["message"]["content"]
 
     async def _generate(self, system: str, user_text: str) -> str:
+        url = f"{settings.api_url}/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {settings.gemini_api_key}",
+            "Authorization": f"Bearer {settings.api_token}",
         }
         payload = {
             "model": self._model,
@@ -106,16 +106,15 @@ class GeminiService:
             "temperature": 0.7,
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                TEXT_API_URL,
-                json=payload,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp:
-                if resp.status != 200:
-                    text = await resp.text()
-                    logger.error("Pollinations text API error %d: %s", resp.status, text)
-                    raise RuntimeError(f"Text API returned {resp.status}")
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
+        async with self._session.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=30),
+        ) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                logger.error("Text API error %d: %s", resp.status, text)
+                raise RuntimeError(f"Text API returned {resp.status}")
+            data = await resp.json()
+            return data["choices"][0]["message"]["content"]

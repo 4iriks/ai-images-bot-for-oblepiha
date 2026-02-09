@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
@@ -14,6 +15,7 @@ from services.logger import log_generation
 from services.pollinations import PollinationsService
 from states.generation import GenerationStates
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 
@@ -133,11 +135,13 @@ async def process_prompt(
                 "Ответьте одним сообщением или нажмите <b>«Пропустить»</b>:"
             )
             await wait_msg.edit_text(text, reply_markup=clarification_kb())
-        except Exception:
+        except Exception as e:
+            logger.error("Ошибка уточняющих вопросов: %s", e, exc_info=True)
             await wait_msg.edit_text("⚠️ Не удалось получить вопросы, формирую промт...")
             try:
                 final_prompt = await gemini_service.enhance_prompt(prompt)
-            except Exception:
+            except Exception as e2:
+                logger.error("Ошибка enhance_prompt: %s", e2, exc_info=True)
                 final_prompt = prompt
             await _do_generation(message, state, pollinations_service, prompt, final_prompt)
     else:

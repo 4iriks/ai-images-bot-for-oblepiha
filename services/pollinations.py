@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from urllib.parse import quote
 
 import aiohttp
 
@@ -15,18 +16,15 @@ class PollinationsService:
     async def generate_image(
         self, prompt: str, model: str = "flux", width: int = 1024, height: int = 1024,
     ) -> bytes | None:
-        """Отправляет запрос на генерацию в service-bot (key swap сервис)."""
-        payload = {
-            "prompt": prompt,
-            "model": model,
-            "width": width,
-            "height": height,
-        }
+        """Отправляет GET-запрос на API для генерации изображения."""
+        encoded_prompt = quote(prompt, safe="")
+        url = f"{settings.api_url}/image/{encoded_prompt}?model={model}&width={width}&height={height}"
+        headers = {"Authorization": f"Bearer {settings.api_token}"}
 
         try:
-            async with self._session.post(
-                f"{settings.service_url}/generate",
-                json=payload,
+            async with self._session.get(
+                url,
+                headers=headers,
                 timeout=aiohttp.ClientTimeout(total=120),
             ) as resp:
                 if resp.status == 200:
@@ -36,12 +34,6 @@ class PollinationsService:
                     else:
                         logger.warning("Не изображение от сервиса: %s", content_type)
                         return None
-                elif resp.status == 403:
-                    logger.error("Сервис не авторизован (ожидает одобрения)")
-                    return None
-                elif resp.status == 503:
-                    logger.error("Нет активных ключей на сервисе")
-                    return None
                 else:
                     logger.error("Сервис вернул %d для модели %s", resp.status, model)
                     return None

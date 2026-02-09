@@ -32,8 +32,8 @@ async def main():
     await init_db()
 
     # Сервисы
-    session = aiohttp.ClientSession()
-    gemini_service = GeminiService()
+    session = aiohttp.ClientSession(auto_decompress=False)
+    gemini_service = GeminiService(session)
     pollinations_service = PollinationsService(session)
 
     dp["gemini_service"] = gemini_service

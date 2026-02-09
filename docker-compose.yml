@@ -2,6 +2,7 @@ services:
   bot:
     build: .
     env_file: .env
+    network_mode: host
     volumes:
       - bot-data:/app/data
     restart: unless-stopped
