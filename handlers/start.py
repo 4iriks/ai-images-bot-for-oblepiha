@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 
 from db.models import ensure_user, get_user
 from keyboards.inline import subscription_kb, main_menu_kb
-from utils.subscription import check_subscription
+from utils.subscription import check_subscription, check_bot_started
 
 router = Router()
 
@@ -15,14 +15,16 @@ async def cmd_start(message: Message):
     existing_user = await get_user(user.id)
     await ensure_user(user.id, user.username, user.full_name)
 
-    if not await check_subscription(message.bot, user.id):
+    is_subscribed = await check_subscription(message.bot, user.id)
+    is_miniapp_started = await check_bot_started(user.id)
+    if not is_subscribed or not is_miniapp_started:
         await message.answer(
             "🎨 <b>Облепиха Images AI</b>\n\n"
             "Удобный и бесплатный сервис для генерации картинок искусственным интеллектом.\n\n"
             "Сделано с душой, при поддержке команды "
             '<a href="https://t.me/oblepiha_vpn_bot">Облепиха VPN</a> 🧡\n\n'
             "━━━━━━━━━━━━━━━\n\n"
-            "📋 <b>Чтобы пользоваться сервисом, необходимо подписаться на канал и запустить бота:</b>",
+            "📋 <b>Чтобы пользоваться сервисом, необходимо подписаться на канал и запустить мини-приложение:</b>",
             reply_markup=subscription_kb(),
         )
         return
@@ -46,8 +48,16 @@ async def cmd_start(message: Message):
 
 @router.callback_query(F.data == "check_subscription")
 async def check_sub_callback(callback: CallbackQuery):
-    if not await check_subscription(callback.bot, callback.from_user.id):
-        await callback.answer("❌ Вы ещё не подписались на канал и не запустили бота!", show_alert=True)
+    is_subscribed = await check_subscription(callback.bot, callback.from_user.id)
+    is_miniapp_started = await check_bot_started(callback.from_user.id)
+    if not is_subscribed or not is_miniapp_started:
+        if not is_subscribed and not is_miniapp_started:
+            msg = "❌ Вы ещё не подписались на канал и не запустили мини-приложение!"
+        elif not is_subscribed:
+            msg = "❌ Вы ещё не подписались на канал!"
+        else:
+            msg = "❌ Вы ещё не запустили мини-приложение!"
+        await callback.answer(msg, show_alert=True)
         return
 
     await callback.message.edit_text(

@@ -1,5 +1,6 @@
 import logging
 
+import aiohttp
 from aiogram import Bot
 from aiogram.enums import ChatMemberStatus
 
@@ -28,6 +29,25 @@ async def check_subscription(bot: Bot, user_id: int) -> bool:
 
 
 async def check_bot_started(user_id: int) -> bool:
-    # TODO: Telegram Bot API does not allow checking if a user started another bot.
-    # Options: shared DB, API on the VPN bot side, or skip this check.
-    return True
+    if not settings.bot_check_url or not settings.bot_check_api_key:
+        return True
+    if user_id == settings.admin_id:
+        return True
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{settings.bot_check_url}/check",
+                params={"telegram_id": user_id},
+                headers={"X-API-Key": settings.bot_check_api_key},
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    activated = data.get("activated", False)
+                    logger.info("User %d miniapp check: %s", user_id, activated)
+                    return activated
+                logger.warning("Miniapp check returned %d for user %d", resp.status, user_id)
+                return False
+    except Exception as e:
+        logger.error("Miniapp check failed for user %d: %s", user_id, e)
+        return True

@@ -10,7 +10,7 @@ def subscription_kb() -> InlineKeyboardMarkup:
     ]
     if settings.required_bot:
         buttons.append(
-            [InlineKeyboardButton(text="Запустить бота", url=f"https://t.me/{settings.required_bot.lstrip('@')}")]
+            [InlineKeyboardButton(text="Запустить мини-приложение", url=f"https://t.me/{settings.required_bot.lstrip('@')}")]
         )
     buttons.append(
         [InlineKeyboardButton(text="Проверить подписку ✅", callback_data="check_subscription")]
