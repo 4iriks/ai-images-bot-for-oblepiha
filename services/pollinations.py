@@ -50,7 +50,7 @@ class PollinationsService:
 
                     body = await resp.text()
                     if resp.status == 400:
-                        logger.error("Сервис вернул 400 для модели %s: %s", model, body[:500])
+                        logger.error("Сервис вернул 400 для модели %s: %s", model, body[:2000])
                         return GenerationError("bad_prompt")
 
                     logger.warning(
