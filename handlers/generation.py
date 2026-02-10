@@ -18,6 +18,24 @@ from states.generation import GenerationStates
 logger = logging.getLogger(__name__)
 router = Router()
 
+TG_RETRIES = 3
+TG_RETRY_DELAY = 2
+
+
+async def _tg_retry(coro_func, *args, **kwargs):
+    """Повторяет Telegram API вызов при сетевых ошибках."""
+    for attempt in range(1, TG_RETRIES + 1):
+        try:
+            return await coro_func(*args, **kwargs)
+        except Exception as e:
+            err_name = type(e).__name__
+            if "Network" in err_name or "Timeout" in err_name or "ClientOS" in str(e) or "reset by peer" in str(e):
+                logger.warning("Telegram API ошибка (попытка %d/%d): %s", attempt, TG_RETRIES, e)
+                if attempt < TG_RETRIES:
+                    await asyncio.sleep(TG_RETRY_DELAY)
+                    continue
+            raise
+
 
 @router.callback_query(F.data == "generate")
 async def start_generation(callback: CallbackQuery, state: FSMContext):
@@ -265,7 +283,7 @@ async def _do_generation(
             error_text = "⏳ Сервис не ответил вовремя. Попробуйте позже."
         else:
             error_text = "😔 Сервис временно недоступен, придется подождать или поменять модель🙃"
-        await status_msg.edit_text(error_text, reply_markup=main_menu_kb())
+        await _tg_retry(status_msg.edit_text, error_text, reply_markup=main_menu_kb())
         return
 
     image_data = result
@@ -283,14 +301,15 @@ async def _do_generation(
 
     photo = BufferedInputFile(image_data, filename="generation.png")
     caption = f"🎨 {original_prompt[:900]}"
-    await target.answer_photo(photo=photo, caption=caption)
+    await _tg_retry(target.answer_photo, photo=photo, caption=caption)
 
     try:
         await status_msg.delete()
     except Exception:
         pass
 
-    await target.answer(
+    await _tg_retry(
+        target.answer,
         f"Напишите новый запрос или выберите действие:{remaining_text}",
         reply_markup=main_menu_kb(),
     )
