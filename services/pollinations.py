@@ -26,11 +26,12 @@ class PollinationsService:
         self, prompt: str, model: str = "flux", width: int = 1024, height: int = 1024,
     ) -> bytes | GenerationError:
         """Отправляет GET-запрос на API для генерации изображения."""
-        prompt = prompt[:1500]
+        prompt = prompt.replace("#", "")[:1500]
         encoded_prompt = quote(prompt, safe="")
         url = f"{settings.api_url}/image/{encoded_prompt}?model={model}&width={width}&height={height}"
         headers = {"Authorization": f"Bearer {settings.api_token}"}
 
+        logger.debug("URL запроса: %s", url)
         last_status = None
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
