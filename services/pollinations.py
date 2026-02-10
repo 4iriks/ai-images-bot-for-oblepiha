@@ -48,13 +48,14 @@ class PollinationsService:
 
                     last_status = resp.status
 
+                    body = await resp.text()
                     if resp.status == 400:
-                        logger.error("Сервис вернул 400 для модели %s (некорректный промт)", model)
+                        logger.error("Сервис вернул 400 для модели %s: %s", model, body[:500])
                         return GenerationError("bad_prompt")
 
                     logger.warning(
-                        "Сервис вернул %d для модели %s (попытка %d/%d)",
-                        resp.status, model, attempt, self.MAX_RETRIES,
+                        "Сервис вернул %d для модели %s (попытка %d/%d): %s",
+                        resp.status, model, attempt, self.MAX_RETRIES, body[:500],
                     )
             except asyncio.TimeoutError:
                 logger.warning(
