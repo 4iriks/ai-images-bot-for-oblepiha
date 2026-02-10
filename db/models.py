@@ -4,8 +4,7 @@ from db.database import get_db
 MODELS = {
     "flux": {"name": "FLUX", "emoji": "⚡", "limit": 0},
     "zimage": {"name": "ZImage", "emoji": "🖼", "limit": 0},
-    "flux-2-dev": {"name": "FLUX 2 Dev", "emoji": "🔬", "limit": 10},
-    "imagen-4": {"name": "Imagen 4", "emoji": "🌟", "limit": 15},
+"imagen-4": {"name": "Imagen 4", "emoji": "🌟", "limit": 15},
     "klein": {"name": "Klein", "emoji": "💎", "limit": 7},
     "klein-large": {"name": "Klein Large", "emoji": "👑", "limit": 3},
     "gptimage": {"name": "GPT Image", "emoji": "🤖", "limit": 3},

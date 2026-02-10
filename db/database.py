@@ -51,6 +51,7 @@ async def init_db():
     migrations = [
         "ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'imagen-4'",
         "UPDATE users SET selected_model = 'imagen-4' WHERE selected_model = 'flux'",
+        "UPDATE users SET selected_model = 'imagen-4' WHERE selected_model = 'flux-2-dev'",
     ]
     for migration in migrations:
         try:
