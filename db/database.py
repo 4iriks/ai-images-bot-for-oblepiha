@@ -49,7 +49,8 @@ async def init_db():
     """)
     # Миграции для существующих таблиц
     migrations = [
-        "ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'flux'",
+        "ALTER TABLE users ADD COLUMN selected_model TEXT DEFAULT 'imagen-4'",
+        "UPDATE users SET selected_model = 'imagen-4' WHERE selected_model = 'flux'",
     ]
     for migration in migrations:
         try:

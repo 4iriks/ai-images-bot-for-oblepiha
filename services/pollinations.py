@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from urllib.parse import quote
 
 import aiohttp
@@ -26,7 +27,11 @@ class PollinationsService:
         self, prompt: str, model: str = "flux", width: int = 1024, height: int = 1024,
     ) -> bytes | GenerationError:
         """Отправляет GET-запрос на API для генерации изображения."""
-        prompt = prompt.replace("#", "")[:1500]
+        # Убираем markdown-заголовки типа **Prompt:**\n\n от Gemini
+        prompt = re.sub(r"^\*{1,2}[^*]+\*{1,2}\s*", "", prompt)
+        # Убираем переносы строк (ломают URL path) и # (ломают URL fragment)
+        prompt = prompt.replace("\n", " ").replace("\r", " ").replace("#", "")
+        prompt = prompt[:1500]
         encoded_prompt = quote(prompt, safe="")
         url = f"{settings.api_url}/image/{encoded_prompt}?model={model}&width={width}&height={height}"
         headers = {"Authorization": f"Bearer {settings.api_token}"}
