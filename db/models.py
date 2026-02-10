@@ -17,8 +17,8 @@ MODELS = {
 async def ensure_user(user_id: int, username: str | None, full_name: str):
     db = await get_db()
     await db.execute(
-        """INSERT INTO users (user_id, username, full_name)
-           VALUES (?, ?, ?)
+        """INSERT INTO users (user_id, username, full_name, selected_model)
+           VALUES (?, ?, ?, 'imagen-4')
            ON CONFLICT(user_id) DO UPDATE SET username=excluded.username, full_name=excluded.full_name""",
         (user_id, username, full_name),
     )
