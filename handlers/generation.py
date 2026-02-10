@@ -12,7 +12,7 @@ from db.models import (
 from keyboards.inline import cancel_kb, clarification_kb, main_menu_kb
 from services.gemini import GeminiService
 from services.logger import log_generation
-from services.pollinations import PollinationsService
+from services.pollinations import PollinationsService, GenerationError
 from states.generation import GenerationStates
 
 logger = logging.getLogger(__name__)
@@ -252,15 +252,23 @@ async def _do_generation(
         except Exception:
             pass
 
-    image_data = await pollinations.generate_image(final_prompt, model=model)
+    result = await pollinations.generate_image(final_prompt, model=model)
     await state.clear()
 
-    if image_data is None:
-        await status_msg.edit_text(
-            "😔 Не удалось сгенерировать изображение. Попробуйте позже.",
-            reply_markup=main_menu_kb(),
-        )
+    if isinstance(result, GenerationError):
+        if result.error_type == "bad_prompt":
+            error_text = (
+                "⚠️ Некорректный промт — сервис отклонил запрос.\n"
+                "Попробуйте переформулировать описание."
+            )
+        elif result.error_type == "timeout":
+            error_text = "⏳ Сервис не ответил вовремя. Попробуйте позже."
+        else:
+            error_text = "😔 Сервис временно недоступен. Попробуйте позже."
+        await status_msg.edit_text(error_text, reply_markup=main_menu_kb())
         return
+
+    image_data = result
 
     # Track usage
     await add_model_usage(user_id, model)
