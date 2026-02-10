@@ -43,7 +43,7 @@ async def check_bot_started(user_id: int) -> bool:
             ) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    activated = data.get("activated", False)
+                    activated = data.get("exists", False)
                     logger.info("User %d miniapp check: %s", user_id, activated)
                     return activated
                 logger.warning("Miniapp check returned %d for user %d", resp.status, user_id)
